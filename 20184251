@@ -1,0 +1,129 @@
+#1.라이브러리 임포트
+import RPi.GPIO as GPIO
+from time import sleep
+#1.1 에러 제거
+GPIO.warnings(False)
+
+#2. GPIO setup, 핀 넘버 부르는 방식 설정, Board와 BCM 방식
+# GPIO.BOARD : 8번핀은 GPIO.BCM 모드에서 14번 핀과 동일
+# GPIO.BCM : Broadcom chip-specific pin numbers로 
+# Broadcom SOC 칩에서 사용하는 핀이름을 사용하겠다는 의미
+
+GPIO.setmode(GPIO.BCM)
+
+#3. 핀 모드 설정, input 또는 output
+#3-1. GPIO.setup(pin/port number, GPIO.OUT)
+# GPIO.setup은 어떤 GPIO 핀의 입력/출력 방향(direction)을 설정하는 기능을 한다.
+# 입/출력을 설정할 대상 핀/포트 번호를 첫 번째 인자로 받고,
+# 입력(INPUT)으로 설정할 것인지 출력(OUTPUT)으로 할 것인지를 두 번째 인자로 받는다.
+# LED용으로 사용한 18, 23, 24, 25번 핀을 출력 모드로 설정하고 꺼진 상태(0)로 초기화한다.
+
+GPIO.setup(18, GPIO.OUT)
+GPIO.setup(23, GPIO.OUT)
+GPIO.setup(24, GPIO.OUT)
+GPIO.setup(25, GPIO.OUT)
+
+#스위치용으로 사용한 21번 핀을 출력 모드로 설정하고, 풀업으로 설정한다.
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#4. 메인 쓰레드
+#4-1. GPIO.output은 출력 모드로 설정된 핀에 0 또는 1 값을 할당하는 역할을 한다
+# 1 = GPIO.HIGH = TRUE
+# 0 = GPIO.LOW = False
+
+GPIO.output(18, False)
+GPIO.output(23, False)
+GPIO.output(24, False)
+GPIO.output(25, False)
+
+#LED용 핀 번호를 led_list 리스트에 저장한다.
+LED_list=[18, 23, 24, 25]
+
+GPIO.setup(18, GPIO.OUT) #BCM 모드는 18을, BOARD 모드는 12를 사용
+GPIO.setup(23, GPIO.OUT) #BCM 모드는 23을, BOARD 모드는 16를 사용
+GPIO.setup(24, GPIO.OUT) #BCM 모드는 24을, BOARD 모드는 18를 사용
+GPIO.setup(25, GPIO.OUT) #BCM 모드는 25을, BOARD 모드는 22를 사용
+#GPIO.setup(LED_list, GPIO.OUT)
+
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#21번 핀 스위치용으로 사용함
+#GPIO.setup은 어떤 GPIO 핀의 입력/출력 방향(direction)을 설정하는 기능을 한다.
+#입/출력을 설정할 대상 핀/포트 번호를 첫 번째 인자로 받고, 입력(INput)으로 설정할 것인지 출력(OUTput)으로 할 것인지를 두 번째 인자
+#입력으로 설정됐을 때, 세 번째 인자로 풀업/풀다운 저항을 설정할 것인지 여부
+
+GPIO.output(18, false)
+GPIO.output(23, false)
+GPIO.output(24, false)
+GPIO.output(25, false)
+#GPIO.output(LED_list, False)
+LED_list=[18, 23, 24, 25]
+
+#LED369 함수
+def LED369(channel):
+    print("LED369 activated")
+ 
+    for i in range(1, 101):
+        num = (i-1) % 4
+        num_str = str(i)
+        flag_369 = 0
+ 
+        if (num_str.find('3') != -1 or num_str.find('6') != -1 or num_str.find('9') != -1):
+            print("x(%s)" % num_str)
+            flag_369 = 1
+        else:
+            print(num_str)
+ 
+        if (flag_369 == 1):
+            GPIO.output(LED_list[num], False)
+        else:
+            GPIO.output(LED_list[num], True)
+ 
+        sleep(0.5)
+        GPIO.output(LED_list[num], False)
+
+GPIO.add_event_detect(21, GPIO.FALLING, callback=LED369, bouncetime=300)
+#21번 핀 (스위치)가 눌릴 때 (GPIO.FALLING)를 감지해, 풀링 엣지가 발생할 경우
+#LED369 함수를 호출
+print("wait for the switch event.")
+
+while True:
+    try:
+        sleep(5)
+    except KeyboardInterrupt:
+        print("Au revoir!".center(20))
+        GPIO.cleanup()
+        break
+
+
+
+button_pin = 15
+led_pin = 4
+
+# boolean 변수 설정
+light_on = False
+ # 불필요한 warning 제거
+GPIO.setwarnings(False)
+# GPIO핀의 번호 모드 설정
+GPIO.setmode(GPIO.BCM)
+# 버튼 핀의 IN/OUT 설정 , PULL DOWN 설정
+GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+# LED 핀을 출력모드로 설정
+GPIO.setup(led_pin, GPIO.OUT)
+
+# button_callback 함수를 정의합니다.
+def button_callback(channel):
+    global light_on    # Global 변수선언
+    print("Button pushed!")
+    if light_on == False:  # LED 불이 꺼져있을때
+        GPIO.output(led_pin,1)   # LED ON
+        print("LED ON!")
+    else:                                # LED 불이 져있을때
+        GPIO.output(led_pin,0)  # LED OFF
+        print("LED OFF!")
+    light_on = not light_on  # False <=> True
+
+
+# Event 방식으로 핀의 Rising 신호를 감지하면 button_callback 함수를 실행합니다.
+# 300ms 바운스타임을 설정하여 잘못된 신호를 방지합니다.
+GPIO.add_event_detect(button_pin,GPIO.RISING,callback=button_callback, bouncetime=300)
+
+while 1: time.sleep(0.1) # 0.1초 딜레이
